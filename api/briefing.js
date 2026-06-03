@@ -3,10 +3,10 @@ export default async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { empresa, contato, cargo, contexto } = req.body;
+  const { empresa } = req.body;
 
-  if (!empresa || !contato) {
-    return res.status(400).json({ error: 'Empresa e contato sao obrigatorios' });
+  if (!empresa || !empresa.trim()) {
+    return res.status(400).json({ error: 'Nome da empresa ou site e obrigatorio' });
   }
 
   const apiKey = process.env.ANTHROPIC_API_KEY;
@@ -14,7 +14,16 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'API key nao configurada' });
   }
 
-  const prompt = 'Voce e um especialista em vendas enterprise B2B para uma plataforma de assinatura digital (ZapSign). Gere um briefing estrategico completo para uma reuniao de vendas com as seguintes informacoes:\n\nEmpresa: ' + empresa + '\nContato: ' + contato + '\nCargo: ' + (cargo || 'Nao informado') + '\nContexto adicional: ' + (contexto || 'Nenhum contexto adicional fornecido') + '\n\nO briefing deve incluir:\n\n1. Resumo Executivo (2-3 paragrafos sobre a empresa e oportunidade)\n2. Pontos de Dor Provaveis (liste 4-5 desafios comuns para este perfil de empresa)\n3. Proposta de Valor ZapSign (como a ZapSign resolve esses problemas)\n4. Perguntas Estrategicas (5-7 perguntas para fazer durante a reuniao)\n5. Objecoes Esperadas e Respostas (3-4 objecoes comuns com respostas preparadas)\n6. Proximos Passos Sugeridos (acoes recomendadas apos a reuniao)\n\nSeja especifico, pratico e focado em resultados de negocio.';
+  const prompt = 'Voce e um especialista em vendas enterprise B2B para a ZapSign, plataforma de assinatura digital.' +
+    ' Com base apenas no nome/site da empresa "' + empresa.trim() + '", pesquise o que voce sabe sobre essa empresa e gere um briefing estrategico completo para uma reuniao de vendas.' +
+    '\n\nO briefing deve incluir:' +
+    '\n\n1. **Sobre a Empresa** (segmento, porte estimado, modelo de negocio, presenca no mercado)' +
+    '\n2. **Pontos de Dor Provaveis** (4-5 desafios operacionais tipicos deste perfil de empresa que a ZapSign pode resolver)' +
+    '\n3. **Proposta de Valor ZapSign** (como a assinatura digital resolve os problemas especificos desta empresa)' +
+    '\n4. **Perguntas Estrategicas para a Reuniao** (6-8 perguntas de discovery para fazer ao prospect)' +
+    '\n5. **Objecoes Esperadas e Como Responder** (3-4 objecoes comuns com respostas preparadas)' +
+    '\n6. **Proximos Passos Sugeridos** (acoes recomendadas para avancar o negocio)' +
+    '\n\nSeja especifico ao perfil da empresa, pratico e focado em resultados de negocio. Se nao conhecer a empresa, baseie-se no segmento que o nome/site sugere.';
 
   try {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -43,4 +52,4 @@ export default async function handler(req, res) {
   } catch (error) {
     return res.status(500).json({ error: 'Erro interno: ' + error.message });
   }
-}
+    }
