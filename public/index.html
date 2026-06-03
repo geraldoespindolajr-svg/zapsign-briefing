@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ZapSign - Gerador de Briefing Enterprise</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f0f2f5; min-height: 100vh; }
+    .header { background: #1a1a2e; color: white; padding: 20px 40px; display: flex; align-items: center; gap: 16px; }
+    .header-logo { font-size: 24px; font-weight: 800; color: #00d4aa; }
+    .header-subtitle { font-size: 14px; color: #aaa; }
+    .container { max-width: 900px; margin: 40px auto; padding: 0 20px; }
+    .card { background: white; border-radius: 12px; padding: 32px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); margin-bottom: 24px; }
+    .card h2 { font-size: 20px; color: #1a1a2e; margin-bottom: 24px; display: flex; align-items: center; gap: 8px; }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+    .form-group.full { grid-column: 1 / -1; }
+    label { font-size: 13px; font-weight: 600; color: #555; text-transform: uppercase; letter-spacing: 0.5px; }
+    input, textarea { padding: 12px 16px; border: 2px solid #e8ecf0; border-radius: 8px; font-size: 15px; color: #333; transition: border-color 0.2s; font-family: inherit; }
+    input:focus, textarea:focus { outline: none; border-color: #00d4aa; }
+    textarea { resize: vertical; min-height: 80px; }
+    .btn { background: linear-gradient(135deg, #00d4aa, #00a887); color: white; border: none; padding: 14px 32px; border-radius: 8px; font-size: 16px; font-weight: 700; cursor: pointer; width: 100%; margin-top: 8px; transition: transform 0.2s, box-shadow 0.2s; }
+    .btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,212,170,0.4); }
+    .btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+    .result { display: none; }
+    .result.visible { display: block; }
+    .briefing-content { background: #f8fafc; border-radius: 8px; padding: 24px; font-size: 15px; line-height: 1.7; color: #333; white-space: pre-wrap; }
+    .loading { text-align: center; padding: 40px; color: #666; }
+    .spinner { width: 40px; height: 40px; border: 3px solid #e0e0e0; border-top-color: #00d4aa; border-radius: 50%; animation: spin 0.8s linear infinite; margin: 0 auto 16px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .error { background: #fff0f0; border: 1px solid #ffcccc; border-radius: 8px; padding: 16px; color: #c0392b; }
+    .badge { background: #00d4aa20; color: #00a887; padding: 3px 8px; border-radius: 4px; font-size: 12px; font-weight: 600; }
+    .copy-btn { background: #f0f2f5; border: 1px solid #ddd; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-size: 13px; color: #555; }
+    .copy-btn:hover { background: #e0e4ea; }
+    .result-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div>
+      <div class="header-logo">ZapSign</div>
+      <div class="header-subtitle">Gerador de Briefing Enterprise com IA</div>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="card">
+      <h2>Dados da Reuniao <span class="badge">Claude AI</span></h2>
+      <div class="form-grid">
+        <div class="form-group">
+          <label>Empresa *</label>
+          <input type="text" id="empresa" placeholder="Ex: Banco Itau, Magazine Luiza..." />
+        </div>
+        <div class="form-group">
+          <label>Nome do Contato *</label>
+          <input type="text" id="contato" placeholder="Ex: Joao Silva" />
+        </div>
+        <div class="form-group">
+          <label>Cargo</label>
+          <input type="text" id="cargo" placeholder="Ex: Diretor de Operacoes, CFO..." />
+        </div>
+        <div class="form-group full">
+          <label>Contexto Adicional</label>
+          <textarea id="contexto" placeholder="Ex: Empresa tem 500 funcionarios, setor financeiro, ja usa DocuSign mas quer migrar por custo..."></textarea>
+        </div>
+      </div>
+      <button class="btn" id="generateBtn" onclick="generateBriefing()">
+        Gerar Briefing Estrategico
+      </button>
+    </div>
+
+    <div class="card result" id="resultCard">
+      <div class="loading" id="loading">
+        <div class="spinner"></div>
+        <p>Gerando briefing estrategico com IA...</p>
+      </div>
+      <div id="briefingResult" style="display:none">
+        <div class="result-header">
+          <h2>Briefing Gerado</h2>
+          <button class="copy-btn" onclick="copyBriefing()">Copiar</button>
+        </div>
+        <div class="briefing-content" id="briefingContent"></div>
+      </div>
+      <div class="error" id="errorMsg" style="display:none"></div>
+    </div>
+  </div>
+
+  <script>
+    async function generateBriefing() {
+      const empresa = document.getElementById('empresa').value.trim();
+      const contato = document.getElementById('contato').value.trim();
+      const cargo = document.getElementById('cargo').value.trim();
+      const contexto = document.getElementById('contexto').value.trim();
+
+      if (!empresa || !contato) {
+        alert('Por favor, preencha pelo menos Empresa e Contato.');
+        return;
+      }
+
+      const btn = document.getElementById('generateBtn');
+      const resultCard = document.getElementById('resultCard');
+      const loading = document.getElementById('loading');
+      const briefingResult = document.getElementById('briefingResult');
+      const errorMsg = document.getElementById('errorMsg');
+
+      btn.disabled = true;
+      btn.textContent = 'Gerando...';
+      resultCard.classList.add('visible');
+      loading.style.display = 'block';
+      briefingResult.style.display = 'none';
+      errorMsg.style.display = 'none';
+
+      try {
+        const response = await fetch('/api/briefing', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ empresa, contato, cargo, contexto })
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Erro ao gerar briefing');
+        }
+
+        loading.style.display = 'none';
+        briefingResult.style.display = 'block';
+        document.getElementById('briefingContent').textContent = data.briefing;
+        resultCard.scrollIntoView({ behavior: 'smooth' });
+      } catch (error) {
+        loading.style.display = 'none';
+        errorMsg.style.display = 'block';
+        errorMsg.textContent = 'Erro: ' + error.message;
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Gerar Briefing Estrategico';
+      }
+    }
+
+    function copyBriefing() {
+      const content = document.getElementById('briefingContent').textContent;
+      navigator.clipboard.writeText(content).then(() => {
+        const btn = document.querySelector('.copy-btn');
+        btn.textContent = 'Copiado!';
+        setTimeout(() => btn.textContent = 'Copiar', 2000);
+      });
+    }
+  </script>
+</body>
+</html>
