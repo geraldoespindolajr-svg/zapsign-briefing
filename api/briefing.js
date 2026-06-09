@@ -14,12 +14,13 @@ export default async function handler(req, res) {
   // Read API keys from environment variables
   const anthropicKey = process.env.ANTHROPIC_API_KEY;
   const chatgptKey = process.env.CHATGPT_API_KEY;
-  const apiKey = anthropicKey || chatgptKey;
+ 
 
-  // No API key configured
-  if (!apiKey) {
+   // No API key configured
+  if (!anthropicKey && !chatgptKey) {
     return res.status(500).json({ error: 'API key nao configurada' });
   }
+
 
   // Build the briefing prompt
   const prompt =
