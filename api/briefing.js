@@ -93,3 +93,7 @@ export default async function handler(req, res) {
       .json({ error: 'Erro interno: ' + error.message });
   }
 }
+
+
+export const config = { runtime: 'nodejs' };
+
